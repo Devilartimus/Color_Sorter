@@ -5,6 +5,8 @@ project(Colour_Parser LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Threads REQUIRED)
+
 add_executable(Colour_Parser
     include/ColoredObject.h
     include/ThreadManager.h
@@ -12,6 +14,7 @@ add_executable(Colour_Parser
     src/main.cpp
     src/ThreadManager.cpp
     src/utils.cpp
+
 )
 
 include(GNUInstallDirs)
