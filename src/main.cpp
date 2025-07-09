@@ -3,11 +3,26 @@
 #include <string>
 #include <limits>
 
-int main() {
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+int main()
+{
+#ifdef _WIN32
+    if (AttachConsole(ATTACH_PARENT_PROCESS) || AllocConsole()) {
+        freopen("CONIN$", "r", stdin);
+        freopen("CONOUT$", "w", stdout);
+        freopen("CONOUT$", "w", stderr);
+        std::cin.clear();
+    }
+#endif
+
     ThreadManager manager;
     std::string command;
     std::string current_file;
 
+    std::cout << "Color Sorter v4.2 (Rule validation)\n";
     std::cout << "Available commands:\n"
               << "  set_rule <rule>   (e.g. \"З < С < К\" or \"G < B < R\")\n"
               << "  load <filename>   - Set input file\n"
@@ -27,6 +42,7 @@ int main() {
             }
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cerr << "Input error occurred. Please try again.\n";
             continue;
         }
 
@@ -51,7 +67,6 @@ int main() {
             } else {
                 try {
                     manager.startProcessing(current_file);
-                    std::cout << "Processing started\n";
                 } catch (const std::exception& e) {
                     std::cerr << "Error: " << e.what() << "\n";
                 }
@@ -60,26 +75,27 @@ int main() {
         else if (command == "stop") {
             if (manager.isProcessing()) {
                 manager.stopProcessing();
-                std::cout << "Processing stopped\n";
             } else {
                 std::cout << "No active processing\n";
             }
         }
         else if (command == "results") {
-            const auto& result = manager.getResult();
-            if (result.empty()) {
-                std::cout << "No results available\n";
+            if (!manager.isRuleSet()) {
+                std::cout << "Sorting rule is not set. Use 'set_rule' first.\n";
             } else {
-                for (const auto& obj : result) {
-                    std::cout << colorToString(obj.m_color) << ": "
-                              << obj.m_payload << "\n";
+                const auto& result = manager.getResult();
+                if (result.empty()) {
+                    std::cout << "No results available\n";
+                } else {
+                    for (const auto& obj : result) {
+                        std::cout << colorToString(obj.m_color) << ": " << obj.m_payload << "\n";
+                    }
                 }
             }
         }
         else if (command == "status") {
-            std::cout << "Processing: "
-                      << (manager.isProcessing() ? "ACTIVE" : "INACTIVE")
-                      << "\n";
+            std::cout << "Processing: " << (manager.isProcessing() ? "ACTIVE" : "INACTIVE") << "\n";
+            std::cout << "Rule set: " << (manager.isRuleSet() ? "YES" : "NO") << "\n";
         }
         else if (command == "exit") {
             if (manager.isProcessing()) {

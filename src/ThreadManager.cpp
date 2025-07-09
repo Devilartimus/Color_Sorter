@@ -1,46 +1,65 @@
 #include "../include/ThreadManager.h"
 #include <fstream>
 #include <iostream>
-#include <chrono>
+#include <cctype>
+#include <algorithm>
 
 using namespace std::chrono_literals;
 
 ThreadManager::ThreadManager() = default;
 
-ThreadManager::~ThreadManager() {
+ThreadManager::~ThreadManager()
+{
     stopProcessing();
 }
 
-void ThreadManager::setRule(const std::string& rule_str) {
+void ThreadManager::setRule(const std::string& rule_str)
+{
     m_rule = parseRule(rule_str);
+    m_rule_set = true;
 }
 
-void ThreadManager::startProcessing(const std::string& filename) {
+void ThreadManager::startProcessing(const std::string& filename)
+{
     if (m_is_processing) {
         std::cerr << "Processing is already running. Stop it first.\n";
         return;
     }
 
-    // Сброс состояния системы
+    if (!m_rule_set) {
+        throw std::runtime_error("Sorting rule is not set. Use 'set_rule' command first.");
+    }
+
+    size_t dot_pos = filename.find_last_of('.');
+    if (dot_pos == std::string::npos || dot_pos == filename.size() - 1) {
+        throw std::runtime_error("File has no extension");
+    }
+
+    std::string ext = filename.substr(dot_pos + 1);
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c){ return std::tolower(c); });
+
+    if (ext != "txt") {
+        throw std::runtime_error("Invalid file type. Only .txt files are supported");
+    }
+
     m_is_processing = true;
     m_stop_requested = false;
     m_buckets = {};
     m_result.clear();
     m_buffer.reset();
 
-    // Создание потоков только при начале обработки
     m_producer_thread = std::thread(&ThreadManager::producerThread, this, filename);
     m_consumer_thread = std::thread(&ThreadManager::consumerThread, this);
 
-    std::cout << "Threads created and started\n";
+    std::cout << "Processing started\n";
 }
 
-void ThreadManager::stopProcessing() {
+void ThreadManager::stopProcessing()
+{
     if (!m_is_processing) return;
 
     m_stop_requested = true;
 
-    // Ожидание завершения и уничтожение потоков
     if (m_producer_thread.joinable()) {
         m_producer_thread.join();
     }
@@ -50,18 +69,26 @@ void ThreadManager::stopProcessing() {
     }
 
     m_is_processing = false;
-    std::cout << "Threads stopped and destroyed\n";
+    std::cout << "Processing stopped\n";
 }
 
-const std::vector<ColoredObject>& ThreadManager::getResult() const {
+const std::vector<ColoredObject>& ThreadManager::getResult() const
+{
     return m_result;
 }
 
-bool ThreadManager::isProcessing() const {
+bool ThreadManager::isProcessing() const
+{
     return m_is_processing;
 }
 
-void ThreadManager::producerThread(const std::string& filename) {
+bool ThreadManager::isRuleSet() const
+{
+    return m_rule_set;
+}
+
+void ThreadManager::producerThread(const std::string& filename)
+{
     try {
         std::ifstream file(filename);
         if (!file.is_open()) {
@@ -83,7 +110,8 @@ void ThreadManager::producerThread(const std::string& filename) {
     m_buffer.markComplete();
 }
 
-void ThreadManager::consumerThread() {
+void ThreadManager::consumerThread()
+{
     while (!m_stop_requested || !m_buffer.isComplete()) {
         if (auto item = m_buffer.tryPop()) {
             int color_index = static_cast<int>(item->m_color);
@@ -93,7 +121,6 @@ void ThreadManager::consumerThread() {
         }
     }
 
-    // Финализация результатов
     for (Color c : m_rule) {
         int index = static_cast<int>(c);
         if (index >= 0 && index < 3) {
@@ -103,18 +130,17 @@ void ThreadManager::consumerThread() {
     }
 }
 
-// Реализация методов SafeBuffer
-void ThreadManager::SafeBuffer::push(ColoredObject&& item) {
+void ThreadManager::SafeBuffer::push(ColoredObject&& item)
+{
     std::lock_guard<std::mutex> lock(m_BufferMtx);
     m_buffer.push(std::move(item));
     m_cv.notify_one();
 }
 
-std::optional<ColoredObject> ThreadManager::SafeBuffer::tryPop() {
+std::optional<ColoredObject> ThreadManager::SafeBuffer::tryPop()
+{
     std::unique_lock<std::mutex> lock(m_BufferMtx);
-    if (m_cv.wait_for(lock, 100ms, [this] {
-            return !m_buffer.empty() || m_is_complete;
-        })) {
+    if (m_cv.wait_for(lock, 100ms, [this] { return !m_buffer.empty() || m_is_complete; })) {
         if (!m_buffer.empty()) {
             ColoredObject item = std::move(m_buffer.front());
             m_buffer.pop();
@@ -124,18 +150,21 @@ std::optional<ColoredObject> ThreadManager::SafeBuffer::tryPop() {
     return std::nullopt;
 }
 
-void ThreadManager::SafeBuffer::markComplete() {
+void ThreadManager::SafeBuffer::markComplete()
+{
     std::lock_guard<std::mutex> lock(m_BufferMtx);
     m_is_complete = true;
     m_cv.notify_all();
 }
 
-bool ThreadManager::SafeBuffer::isComplete() const {
+bool ThreadManager::SafeBuffer::isComplete() const
+{
     std::lock_guard<std::mutex> lock(m_BufferMtx);
     return m_is_complete && m_buffer.empty();
 }
 
-void ThreadManager::SafeBuffer::reset() {
+void ThreadManager::SafeBuffer::reset()
+{
     std::lock_guard<std::mutex> lock(m_BufferMtx);
     m_buffer = std::queue<ColoredObject>();
     m_is_complete = false;

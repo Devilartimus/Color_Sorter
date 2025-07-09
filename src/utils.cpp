@@ -9,17 +9,18 @@
  * @return programm color
  * Converting colors (Russian and English in short and full forms)
  */
-Color stringToColor(const std::string& s) {
+Color stringToColor(const std::string& s)
+{
     static const std::unordered_map<std::string, Color> mapping = {
-        // Русские
+
         {"К", Color::Red}, {"к", Color::Red},
         {"З", Color::Green}, {"з", Color::Green},
         {"С", Color::Blue}, {"с", Color::Blue},
-        // English
+
         {"R", Color::Red}, {"r", Color::Red},
         {"G", Color::Green}, {"g", Color::Green},
         {"B", Color::Blue}, {"b", Color::Blue},
-        // Полные названия
+
         {"Красный", Color::Red}, {"Зеленый", Color::Green}, {"Синий", Color::Blue},
         {"Red", Color::Red}, {"Green", Color::Green}, {"Blue", Color::Blue}
     };
@@ -30,7 +31,8 @@ Color stringToColor(const std::string& s) {
     throw std::invalid_argument("Invalid color string: " + s);
 }
 
-std::string colorToString(Color c) {
+std::string colorToString(Color c)
+{
     switch (c) {
     case Color::Red: return "К";
     case Color::Green: return "З";
@@ -44,7 +46,8 @@ std::string colorToString(Color c) {
  * @param rule_str - input of sorting rule
  * @return programm sorting rule
  */
-std::array<Color, 3> parseRule(const std::string& rule_str) {
+std::array<Color, 3> parseRule(const std::string& rule_str)
+{
     std::istringstream iss(rule_str);
     std::string token;
     std::array<Color, 3> result;
@@ -63,7 +66,8 @@ std::array<Color, 3> parseRule(const std::string& rule_str) {
     return result;
 }
 
-ColoredObject parseLine(const std::string& line) {
+ColoredObject parseLine(const std::string& line)
+{
     size_t pos = line.find(';');
     if (pos == std::string::npos) {
         throw std::invalid_argument("Invalid line format: missing ';' in " + line);
@@ -74,8 +78,8 @@ ColoredObject parseLine(const std::string& line) {
     return {stringToColor(color_str), payload};
 }
 
-bool isSortedCorrectly(const std::vector<ColoredObject>& objects,
-                       const std::array<Color, 3>& rule) {
+bool isSortedCorrectly(const std::vector<ColoredObject>& objects, const std::array<Color, 3>& rule)
+{
     if (objects.empty()) return true;
 
     size_t current_color_index = 0;

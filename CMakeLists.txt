@@ -14,7 +14,6 @@ add_executable(Colour_Parser
     src/main.cpp
     src/ThreadManager.cpp
     src/utils.cpp
-
 )
 
 include(GNUInstallDirs)

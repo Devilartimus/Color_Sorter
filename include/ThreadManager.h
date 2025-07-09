@@ -23,6 +23,7 @@ public:
     void stopProcessing();
     const std::vector<ColoredObject>& getResult() const;
     bool isProcessing() const;
+    bool isRuleSet() const;
 
 private:
     class SafeBuffer {
@@ -49,6 +50,7 @@ private:
     std::vector<ColoredObject> m_result;
     std::atomic<bool> m_is_processing{false};
     std::atomic<bool> m_stop_requested{false};
+    std::atomic<bool> m_rule_set{false};
     std::thread m_producer_thread;
     std::thread m_consumer_thread;
 };
