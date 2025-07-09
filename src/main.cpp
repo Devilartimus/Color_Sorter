@@ -22,7 +22,6 @@ int main()
     std::string command;
     std::string current_file;
 
-    std::cout << "Color Sorter v4.2 (Rule validation)\n";
     std::cout << "Available commands:\n"
               << "  set_rule <rule>   (e.g. \"З < С < К\" or \"G < B < R\")\n"
               << "  load <filename>   - Set input file\n"
