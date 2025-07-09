@@ -1,0 +1,4 @@
+#ifndef THREADMANAGER_H
+#define THREADMANAGER_H
+
+#endif // THREADMANAGER_H

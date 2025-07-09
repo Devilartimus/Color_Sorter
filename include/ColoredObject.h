@@ -1,0 +1,4 @@
+#ifndef COLOREDOBJECT_H
+#define COLOREDOBJECT_H
+
+#endif // COLOREDOBJECT_H
