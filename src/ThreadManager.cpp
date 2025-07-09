@@ -105,6 +105,7 @@ void ThreadManager::producerThread(const std::string& filename)
             }
         }
     } catch (const std::exception& e) {
+        stopProcessing();
         std::cerr << "[ERROR] Producer: " << e.what() << "\n";
     }
     m_buffer.markComplete();
